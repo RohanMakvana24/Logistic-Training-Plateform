@@ -2,13 +2,22 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Cropper from "react-easy-crop";
 
-const ProfileImageCrop = ({ getProfile, removePrevImg }) => {
-  const [imageSrc, setImageSrc] = useState(null);
+const ProfileImageCrop = ({ initImage, getProfile, removePrevImg }) => {
+  const [imageSrc, setImageSrc] = useState("");
   const [croppedImage, setCroppedImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
+  useEffect(() => {
+    if (removePrevImg === true) {
+      setCroppedImage(null);
+      setImageSrc(null);
+    }
+  }, [removePrevImg]);
+  useEffect(() => {
+    setCroppedImage(initImage);
+  }, [initImage]);
   // Upload
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -77,12 +86,6 @@ const ProfileImageCrop = ({ getProfile, removePrevImg }) => {
     setImageSrc(null);
   };
 
-  useEffect(() => {
-    if (removePrevImg === true) {
-      setCroppedImage(null);
-      setImageSrc(null);
-    }
-  }, [removePrevImg]);
   return (
     <div style={{ textAlign: "center" }}>
       {!imageSrc && !croppedImage && (

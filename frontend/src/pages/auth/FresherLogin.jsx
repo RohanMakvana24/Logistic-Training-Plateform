@@ -44,17 +44,30 @@ const LoginFresher = () => {
     onSubmit: async (values) => {
       try {
         const result = await dispatch(
-          FresherLoginThunk(params.get("url"), {
+          FresherLoginThunk({
+            url: params.get("url"),
             password: values.password,
           }),
         );
-        console.log(result);
-        navigate("/");
-
-        // toast.success("Password set successfully! You can now login.", {
-        //   position: "bottom-right",
-        //   className: "foo-bar",
-        // });
+        if (FresherLoginThunk.fulfilled.match(result)) {
+          toast.success(
+            "Password set successfully! You can access dashboard mow.",
+            {
+              position: "bottom-right",
+              className: "foo-bar",
+            },
+          );
+          navigate("/");
+        } else if (FresherLoginThunk.rejected.match(result)) {
+          console.log(result);
+          const errorMessage =
+            result.payload?.data?.message || result.error?.message;
+          if (errorMessage.includes("password")) {
+            userFormik.setFieldError("password", errorMessage);
+          } else {
+            toast.error(errorMessage);
+          }
+        }
       } catch (error) {
         toast.error(error.message || "Something went wrong", {
           position: "bottom-right",

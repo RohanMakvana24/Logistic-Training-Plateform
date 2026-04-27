@@ -36,6 +36,8 @@ class AuthController extends Controller
             }
             $accessToken = $user->createToken('access-token', ['*'], now()->addHours(2))->plainTextToken;
             $refreshToken = $user->createToken('refresh-token', ['refresh'], now()->addDay(7))->plainTextToken;
+            $user->last_login_at = now();
+            $user->save();
             return response()->json([
                 "success" => true,
                 "message" => "Login Successfull",
@@ -133,12 +135,13 @@ class AuthController extends Controller
             }
             $userId = $request->user;
             $user = User::find($userId);
-            if (!$user) {
+            if (!$user || $user->login_used) {
                 return response()->json([
                     "success" => false,
-                    "message" => "Credentials Invalid..."
+                    "message" => "Link already used or invalid"
                 ], 403);
             }
+            $user->login_used = true;
             $user->password = Hash::make($request->password);
             $user->save();
             $accessToken = $user->createToken('access-token', ['*'], now()->addHours(2))->plainTextToken;
