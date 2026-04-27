@@ -32,9 +32,11 @@ export const LogoutAsyncThunk = createAsyncThunk(
 /** Logout API AsyncThunk **/
 export const FresherLoginThunk = createAsyncThunk(
   "auth/fresher-login",
-  async (url, credentials, thunkAPI) => {
+  async ({ url, password }, thunkAPI) => {
     try {
-      const response = await authApi.fresherLoginApi(url, credentials);
+      const response = await authApi.fresherLoginApi(url, {
+        password,
+      });
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response);

@@ -30,6 +30,9 @@ Route::prefix("admin")->group(function () {
         Route::post('/create-user', [UserController::class, 'createUser']);
         Route::get('/fetch-users', [UserController::class, 'fetchUsers']);
         Route::get('/fetch-user/{id}', [UserController::class, 'fetchUser']);
+        Route::put('/update-user', [UserController::class, 'updateUser']);
+        Route::delete('/delete-user/{id}', [UserController::class, 'deleteUser']);
+        Route::post('/generate-pdf', [UserController::class, 'generatesPDF']);
         Route::get("/resent-fresher-login/{id}", [UserController::class, 'resentFresherLoginNotification']);
     });
 });

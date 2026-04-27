@@ -14,7 +14,6 @@ const fresherLoginApi = async (url, credentials) => {
   const response = await api.post(`${url}`, credentials);
   return response;
 };
-
 /* Logout API */
 const logoutApi = async () => {
   const token = localStorage.getItem("accessToken");

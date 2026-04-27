@@ -36,9 +36,46 @@ const fetchUser = async (id) => {
   return response;
 };
 
+/* Update User API */
+const updateUser = async (data) => {
+  const formData = new FormData();
+  Object.keys(data).forEach((key) => {
+    if (key === "profile") {
+      if (data.profile instanceof File) {
+        formData.append("profile", data.profile);
+      }
+    } else {
+      formData.append(key, data[key] ?? "");
+    }
+  });
+
+  formData.append("_method", "PUT");
+
+  const response = await api.post(`${AUTHPATH}/update-user`, formData);
+  return response;
+};
+
 /* Resent Use API */
 const resentFresherLoginRequestApi = async (id) => {
   const response = await api.get(`${AUTHPATH}/resent-fresher-login/${id}`);
+  return response;
+};
+
+/* Delete User API */
+const deleteUser = async (id) => {
+  const response = await api.delete(`${AUTHPATH}/delete-user/${id}`);
+  return response;
+};
+
+/* Generate Users Pdf API */
+const generatePdf = async (data) => {
+  const response = await api.post(
+    `${AUTHPATH}/generate-pdf`,
+    { data: data },
+    {
+      responseType: "blob",
+    },
+  );
   return response;
 };
 
@@ -47,5 +84,8 @@ export default {
   createUser,
   fetchUsers,
   fetchUser,
+  updateUser,
   resentFresherLoginRequestApi,
+  deleteUser,
+  generatePdf,
 };

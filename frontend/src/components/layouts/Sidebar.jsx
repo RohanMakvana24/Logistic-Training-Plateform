@@ -87,13 +87,13 @@ const Sidebar = ({ isOpen, setIsOpen, activeItem, onItemClick }) => {
 
   const UserMenu = [
     {
-      // id: "language",
-      // label: "Languages",
-      // icon: Code2,
-      // subItems: [
-      //   { id: "overview", label: "Overview", path: "/admin/languages" },
-      //   { id: "add", label: "Add New", path: "/admin/languages/add" },
-      // ],
+      id: "language",
+      label: "Languages",
+      icon: Code2,
+      subItems: [
+        { id: "overview", label: "Overview", path: "/admin/languages" },
+        { id: "add", label: "Add New", path: "/admin/languages/add" },
+      ],
     },
   ];
 

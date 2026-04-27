@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\LoginNotification;
 use App\Services\TwilioWhatsAppService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
+use Svg\Tag\Rect;
 use Twilio\Rest\Client;
 
 class UserController extends Controller
@@ -105,8 +108,11 @@ class UserController extends Controller
     public function fetchUsers(Request $request)
     {
         try {
-            $query = User::query();
-
+            if ($request->boolean('showDeleted')) {
+                $query = User::onlyTrashed();
+            } else {
+                $query = User::query();
+            }
             /** 
              * Searching 
              */
@@ -195,6 +201,94 @@ class UserController extends Controller
         }
     }
 
+    /** Update User Controller */
+    public function updateUser(Request $request)
+    {
+        try {
+
+            $userId = $request->userId;
+
+            $data = $request->validate([
+                'full_name' => 'required|min:3',
+                'role' => 'required|in:admin,user',
+                'is_active' => 'required|in:1,0',
+                'email' => 'required|email|unique:users,email,' . $userId,
+                'mobile' => 'required|numeric|digits:10|unique:users,mobile,' . $userId,
+                'iswhatsapp' => "required",
+                'profile' => 'nullable',
+            ]);
+
+            $user = User::findOrFail($userId);
+
+            $newUrl = $user->profile;
+            $publicId = $user->profile_id;
+
+            if ($request->hasFile('profile')) {
+
+                if ($publicId) {
+                    $cloudinary = new Cloudinary();
+                    $cloudinary->uploadApi()->destroy($publicId);
+                }
+
+                $result = $request->file('profile')
+                    ->storeOnCloudinary('logistic/user_profiles');
+
+                $newUrl = $result->getSecurePath();
+                $publicId = $result->getPublicId();
+            }
+
+            $user->full_name = $data['full_name'];
+            $user->role = $data['role'];
+            $user->is_active = $data['is_active'];
+            $user->email = $data['email'];
+            $user->mobile = $data['mobile'];
+            $user->profile = $newUrl;
+            $user->profile_id = $publicId;
+
+            $user->save();
+
+            return response()->json([
+                "success" => true,
+                "message" => "User Updated Successfully",
+                "user" => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "errors" => $e->getTrace()
+            ], 500);
+        }
+    }
+    /** Delete User Controller */
+    public function deleteUser($id)
+    {
+        try {
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "User not found.."
+                ], 400);
+            }
+            if ($user->profile_id) {
+                $cloudinary = new Cloudinary();
+                $cloudinary->uploadApi()->destroy($user->profile_id);
+            }
+            $user->delete();
+            return response()->json([
+                "success" => false,
+                "message" => "User Deleted Successfully"
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "errors" => $e->getTrace()
+            ], 500);
+        }
+    }
+
     /** Resend Fresher Login Controller */
     public function resentFresherLoginNotification($id)
     {
@@ -225,6 +319,70 @@ class UserController extends Controller
                 "twilio_status" => $twilioStatus,
                 "magic_link" => $magicLink
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "errors" =>  $e->getTrace()
+            ], 500);
+        }
+    }
+
+    /** Generate Users PDF Controller */
+    public function generatesPDF(Request $request)
+    {
+        try {
+            $users = $request->data;
+            $contxt = stream_context_create([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ]
+            ]);
+            $pdf = Pdf::loadView('template.pdf.users', [
+                "users" => $users
+            ])->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'isHtml5ParserEnabled' => true,
+                    'chroot' => public_path(),
+                ]);
+            $pdf->getDomPDF()->setHttpContext($contxt);
+
+            return $pdf->download('users_report.pdf');
+        } catch (\Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "errors" =>  $e->getTrace()
+            ], 500);
+        }
+    }
+
+    /** Generate Users excel/csv file Controller */
+    public function generateExcel(Request $request)
+    {
+        try {
+            $users = $request->data;
+            $contxt = stream_context_create([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ]
+            ]);
+            $pdf = Pdf::loadView('template.pdf.users', [
+                "users" => $users
+            ])->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'isHtml5ParserEnabled' => true,
+                    'chroot' => public_path(),
+                ]);
+            $pdf->getDomPDF()->setHttpContext($contxt);
+
+            return $pdf->download('users_report.pdf');
         } catch (\Exception $e) {
             return response()->json([
                 "success" => false,
